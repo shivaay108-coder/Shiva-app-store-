@@ -1,0 +1,557 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090d19">
+<title>SHIVA App Store</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d19;color:#f5f7ff;font-family:Arial,sans-serif}
+header{background:#10182a;padding:16px 5%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;border-bottom:1px solid #26334d}
+.logo{font-size:23px;font-weight:900;color:#64b5ff}
+.logo span{color:white}
+button{border:0;border-radius:9px;padding:11px 16px;background:#247cff;color:white;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#26344e}
+.danger{background:#b83248}
+main{max-width:1150px;margin:auto;padding:24px 16px}
+.hero{padding:35px 25px;border-radius:20px;background:linear-gradient(120deg,#142b51,#183c69,#10182a);margin-bottom:25px}
+.hero h1{font-size:34px;margin:0 0 10px}
+.hero p{color:#c5d7ef;line-height:1.6}
+.search{width:100%;padding:15px;border:1px solid #34445f;background:#121d30;color:white;border-radius:12px;margin:15px 0}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.nav button{background:#19263c}
+.nav button.active{background:#247cff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:15px}
+.card{background:#141e31;border:1px solid #283750;padding:14px;border-radius:15px;min-width:0}
+.card img{width:65px;height:65px;border-radius:15px;object-fit:cover;background:#26344e}
+.card h3{font-size:15px;margin:12px 0 5px;overflow-wrap:anywhere}
+.muted{color:#9baec9;font-size:12px;line-height:1.5}
+.card button{width:100%;margin-top:10px}
+.panel{background:#141e31;padding:20px;border:1px solid #293954;border-radius:15px;margin:18px 0}
+input,textarea,select{width:100%;padding:13px;background:#0c1423;color:white;border:1px solid #34445e;border-radius:9px;margin:7px 0 15px}
+textarea{min-height:85px;resize:vertical}
+label{font-size:13px;color:#c6d4e8}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hidden{display:none!important}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+hr{border:0;border-top:1px solid #293954;margin:18px 0}
+.status{color:#f6c66d;font-size:12px}
+footer{text-align:center;padding:30px;color:#8495af}
+#message{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#263c5c;padding:13px 20px;border-radius:12px;z-index:20;display:none;max-width:90%;text-align:center}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}.hero h1{font-size:27px}header{padding:13px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">SHIVA <span>App Store</span></div>
+ <div class="row">
+  <span id="userLabel" class="muted">Guest</span>
+  <button id="loginBtn" onclick="showPage('account')">Login</button>
+ </div>
+</header>
+
+<main>
+
+<section id="homePage">
+ <div class="hero">
+  <h1>Discover Amazing Apps</h1>
+  <p>Explore, download and enjoy applications. Publish your apps for free on SHIVA App Store.</p>
+  <button onclick="showPage('developer')">Publish Your App</button>
+ </div>
+
+ <input id="searchBox" class="search" placeholder="Search apps..." oninput="renderApps()">
+
+ <div class="nav" id="categories">
+  <button class="active" onclick="setCategory('All',this)">All</button>
+  <button onclick="setCategory('Games',this)">Games</button>
+  <button onclick="setCategory('Education',this)">Education</button>
+  <button onclick="setCategory('Tools',this)">Tools</button>
+  <button onclick="setCategory('Entertainment',this)">Entertainment</button>
+  <button onclick="setCategory('Productivity',this)">Productivity</button>
+ </div>
+
+ <div class="row">
+  <h2>Explore Apps</h2>
+  <span class="muted" id="appCount">0 apps</span>
+ </div>
+ <div id="appGrid" class="grid">
+  <p class="muted">Connecting to SHIVA...</p>
+ </div>
+</section>
+
+<section id="detailsPage" class="hidden">
+ <button class="secondary" onclick="showPage('home')">← Back</button>
+ <div id="detailsContent" class="panel"></div>
+</section>
+
+<section id="accountPage" class="hidden">
+ <div class="panel">
+  <h2 id="authTitle">Login to SHIVA</h2>
+  <label>Email</label>
+  <input id="email" type="email" placeholder="Your email">
+  <label>Password</label>
+  <input id="password" type="password" placeholder="Password">
+  <button id="authAction" onclick="login()">Login</button>
+  <button class="secondary" onclick="toggleAuth()" id="switchAuth">Create Account</button>
+  <button class="secondary hidden" id="logoutBtn" onclick="logout()">Logout</button>
+  <p class="muted">Use your own email account. Keep your password private.</p>
+ </div>
+</section>
+
+<section id="developerPage" class="hidden">
+ <button class="secondary" onclick="showPage('home')">← Back</button>
+ <div class="panel">
+  <h2>Developer Center</h2>
+  <p class="muted">Publish your Android application for free.</p>
+  <div id="developerLoginMessage">Login first to publish an app.</div>
+  <div id="uploadForm" class="hidden">
+   <label>Application Name</label>
+   <input id="appName" maxlength="60" placeholder="My Application">
+   <label>Short Description</label>
+   <input id="shortDesc" maxlength="120" placeholder="Describe your app">
+   <label>Full Description</label>
+   <textarea id="description" maxlength="3000" placeholder="Application details..."></textarea>
+   <div class="form-grid">
+    <div>
+     <label>Category</label>
+     <select id="category">
+      <option>Games</option>
+      <option>Education</option>
+      <option>Tools</option>
+      <option>Entertainment</option>
+      <option>Productivity</option>
+      <option>Other</option>
+     </select>
+    </div>
+    <div>
+     <label>Version</label>
+     <input id="version" value="1.0.0" maxlength="20">
+    </div>
+   </div>
+   <label>App Icon Image URL (HTTPS)</label>
+   <input id="iconURL" placeholder="https://example.com/icon.png">
+   <label>Screenshots URLs (one per line, HTTPS)</label>
+   <textarea id="screenshots" placeholder="https://example.com/screenshot1.jpg"></textarea>
+   <label>Android APK File</label>
+   <input id="apkFile" type="file" accept=".apk,application/vnd.android.package-archive">
+   <p class="muted">Maximum file size: 100 MB in this prototype.</p>
+   <button id="publishBtn" onclick="publishApp()">Upload & Submit for Approval</button>
+   <p id="uploadStatus" class="status"></p>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h3>My Published Apps</h3>
+  <div id="myApps" class="muted">Login to view your apps.</div>
+ </div>
+</section>
+
+<section id="adminPage" class="hidden">
+ <button class="secondary" onclick="showPage('home')">← Back</button>
+ <div class="panel">
+  <h2>Admin Control Panel</h2>
+  <p class="muted">Only accounts with Firebase Admin custom claims can manage approvals.</p>
+  <div id="adminStatus">Checking admin access...</div>
+  <div id="pendingApps"></div>
+ </div>
+</section>
+
+</main>
+
+<footer>
+ <b>SHIVA App Store</b>
+ <p>Free Publishing • Free Downloads</p>
+ <p class="muted">Download apps at your own discretion. Only install trusted applications.</p>
+ <button class="secondary" onclick="showPage('developer')">Developer Center</button>
+ <button class="secondary" onclick="showPage('admin')">Admin</button>
+</footer>
+
+<div id="message"></div>
+
+<script>
+// =====================================
+// 1. FIREBASE CONFIGURATION
+// =====================================
+
+// Replace these values with your Firebase project config.
+
+const firebaseConfig = {
+ apiKey: "YOUR_API_KEY",
+ authDomain: "YOUR_PROJECT.firebaseapp.com",
+ projectId: "YOUR_PROJECT_ID",
+ storageBucket: "YOUR_STORAGE_BUCKET",
+ messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+ appId: "YOUR_APP_ID"
+};
+
+let auth,db,storage;
+let currentUser=null;
+let isAdmin=false;
+let apps=[];
+let selectedCategory="All";
+let registerMode=false;
+
+try{
+ firebase.initializeApp(firebaseConfig);
+ auth=firebase.auth();
+ db=firebase.firestore();
+ storage=firebase.storage();
+ auth.onAuthStateChanged(async user=>{
+  currentUser=user;
+  isAdmin=false;
+  if(user){
+   try{
+    const token=await user.getIdTokenResult(true);
+    isAdmin=token.claims.admin===true;
+   }catch(e){}
+  }
+  updateAccountUI();
+  renderApps();
+  loadMyApps();
+  if(document.getElementById("adminPage").classList.contains("hidden")===false) loadAdmin();
+ });
+ db.collection("apps").where("status","==","approved")
+ .onSnapshot(snapshot=>{
+  apps=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
+  renderApps();
+ },err=>notify("Database: "+err.message));
+}catch(e){
+ console.error(e);
+ notify("Firebase setup incomplete. Add your Firebase configuration.");
+}
+
+// =====================================
+// 2. PAGE NAVIGATION
+// =====================================
+
+function showPage(name){
+ ["home","details","account","developer","admin"].forEach(p=>{
+  document.getElementById(p+"Page").classList.add("hidden");
+ });
+ document.getElementById(name+"Page").classList.remove("hidden");
+ window.scrollTo(0,0);
+ if(name==="developer") loadMyApps();
+ if(name==="admin") loadAdmin();
+}
+
+function notify(text){
+ const el=document.getElementById("message");
+ el.textContent=text;
+ el.style.display="block";
+ clearTimeout(window.msgTimer);
+ window.msgTimer=setTimeout(()=>el.style.display="none",4000);
+}
+
+// =====================================
+// 3. ACCOUNT SYSTEM
+// =====================================
+
+function updateAccountUI(){
+ document.getElementById("userLabel").textContent=
+ currentUser?currentUser.email:"Guest";
+ document.getElementById("loginBtn").textContent=
+ currentUser?"Account":"Login";
+ document.getElementById("logoutBtn").classList.toggle("hidden",!currentUser);
+ document.getElementById("authAction").classList.toggle("hidden",!!currentUser);
+ document.getElementById("switchAuth").classList.toggle("hidden",!!currentUser);
+ document.getElementById("developerLoginMessage").classList.toggle("hidden",!!currentUser);
+ document.getElementById("uploadForm").classList.toggle("hidden",!currentUser);
+}
+
+function toggleAuth(){
+ registerMode=!registerMode;
+ document.getElementById("authTitle").textContent=registerMode?"Create Account":"Login to SHIVA";
+ document.getElementById("authAction").textContent=registerMode?"Register":"Login";
+ document.getElementById("switchAuth").textContent=registerMode?"Already have an account? Login":"Create Account";
+}
+
+async function login(){
+ const email=document.getElementById("email").value.trim();
+ const password=document.getElementById("password").value;
+ if(!email||!password)return notify("Enter email and password.");
+ try{
+  if(registerMode){
+   await auth.createUserWithEmailAndPassword(email,password);
+   notify("Account created successfully.");
+  }else{
+   await auth.signInWithEmailAndPassword(email,password);
+   notify("Login successful.");
+  }
+  showPage("home");
+ }catch(e){notify(e.message);}
+}
+
+async function logout(){
+ try{
+  await auth.signOut();
+  notify("Logged out.");
+  showPage("home");
+ }catch(e){notify(e.message);}
+}
+
+// =====================================
+// 4. CATEGORY AND APP SEARCH
+// =====================================
+
+function setCategory(cat,btn){
+ selectedCategory=cat;
+ document.querySelectorAll("#categories button").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+ renderApps();
+}
+
+function renderApps(){
+ const grid=document.getElementById("appGrid");
+ if(!grid)return;
+ const q=(document.getElementById("searchBox")?.value||"").toLowerCase();
+ const filtered=apps.filter(a=>{
+  const categoryMatch=selectedCategory==="All"||a.category===selectedCategory;
+  const searchMatch=(a.name+" "+a.shortDesc+" "+a.category).toLowerCase().includes(q);
+  return categoryMatch&&searchMatch;
+ });
+ document.getElementById("appCount").textContent=filtered.length+" apps";
+ if(!filtered.length){
+  grid.innerHTML='<p class="muted">No apps found. Be the first to publish!</p>';
+  return;
+ }
+ grid.innerHTML=filtered.map(a=>`
+  <div class="card">
+   <img src="${safeURL(a.iconURL)}" alt="App icon" onerror="this.src='https://placehold.co/100x100/26344e/ffffff?text=APP'">
+   <h3>${esc(a.name)}</h3>
+   <div class="muted">${esc(a.category||"Other")} • v${esc(a.version||"1.0")}</div>
+   <div class="muted">${Number(a.downloadCount||0)} downloads</div>
+   <button onclick="openDetails('${a.id}')">View App</button>
+  </div>`).join("");
+}
+
+// =====================================
+// 5. APP DETAILS AND DOWNLOAD
+// =====================================
+
+function openDetails(id){
+ const a=apps.find(x=>x.id===id);
+ if(!a)return notify("App not found.");
+ const shots=Array.isArray(a.screenshots)?a.screenshots:[];
+ document.getElementById("detailsContent").innerHTML=`
+  <div class="row">
+   <img src="${safeURL(a.iconURL)}" style="width:90px;height:90px;border-radius:18px;object-fit:cover">
+   <div style="flex:1">
+    <h2>${esc(a.name)}</h2>
+    <p class="muted">${esc(a.category)} • Version ${esc(a.version)}</p>
+    <p class="muted">${Number(a.downloadCount||0)} downloads</p>
+   </div>
+  </div>
+  <hr>
+  <h3>About this app</h3>
+  <p>${esc(a.description||a.shortDesc||"No description")}</p>
+  <p class="muted">Developer: ${esc(a.developerEmail||"Developer")}</p>
+  <p class="muted">Package: ${esc(a.packageName||"Not supplied")}</p>
+  <h3>Screenshots</h3>
+  <div class="row">${shots.map(s=>`<img src="${safeURL(s)}" style="width:46%;max-height:180px;object-fit:contain;border-radius:10px">`).join("")}</div>
+  <button onclick="downloadApp('${a.id}')">Download APK</button>
+  <p class="muted">Only install apps you trust. Check the requested permissions before installation.</p>
+ `;
+ showPage("details");
+}
+
+async function downloadApp(id){
+ const a=apps.find(x=>x.id===id);
+ if(!a||!a.downloadURL)return notify("Download is unavailable.");
+ try{
+  await db.collection("apps").doc(id).update({
+   downloadCount:firebase.firestore.FieldValue.increment(1)
+  });
+ }catch(e){console.warn("Counter update failed",e);}
+ const link=document.createElement("a");
+ link.href=a.downloadURL;
+ link.download="";
+ link.target="_blank";
+ link.rel="noopener noreferrer";
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+ notify("Your APK download is starting.");
+}
+
+// =====================================
+// 6. DEVELOPER UPLOAD SYSTEM
+// =====================================
+
+async function publishApp(){
+ if(!currentUser)return notify("Please login first.");
+
+ const name=document.getElementById("appName").value.trim();
+ const shortDesc=document.getElementById("shortDesc").value.trim();
+ const description=document.getElementById("description").value.trim();
+ const category=document.getElementById("category").value;
+ const version=document.getElementById("version").value.trim();
+ const iconURL=document.getElementById("iconURL").value.trim();
+ const screenshots=document.getElementById("screenshots").value
+  .split("\n").map(s=>s.trim()).filter(Boolean);
+ const file=document.getElementById("apkFile").files[0];
+
+ if(!name||!shortDesc||!description||!version||!file)
+  return notify("Complete all required fields.");
+ if(!file.name.toLowerCase().endsWith(".apk"))
+  return notify("Only APK files are accepted.");
+ if(file.size>100*1024*1024)
+  return notify("APK must be smaller than 100 MB.");
+ if(iconURL&&!validURL(iconURL))return notify("Invalid icon URL.");
+ if(screenshots.some(s=>!validURL(s)))return notify("Invalid screenshot URL.");
+
+ const btn=document.getElementById("publishBtn");
+ btn.disabled=true;
+ const status=document.getElementById("uploadStatus");
+ let docRef=null;
+
+ try{
+  status.textContent="Creating app listing...";
+  docRef=await db.collection("apps").add({
+   name,shortDesc,description,category,version,iconURL,
+   screenshots,
+   developerUID:currentUser.uid,
+   developerEmail:currentUser.email,
+   status:"pending",
+   downloadCount:0,
+   createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  status.textContent="Uploading APK...";
+  const fileRef=storage.ref(`apps/${currentUser.uid}/${docRef.id}.apk`);
+  const task=fileRef.put(file,{
+   contentType:"application/vnd.android.package-archive"
+  });
+
+  await new Promise((resolve,reject)=>{
+   task.on("state_changed",
+    snap=>{
+     const percent=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+     status.textContent="Uploading: "+percent+"%";
+    },reject,resolve);
+  });
+
+  const url=await fileRef.getDownloadURL();
+  await docRef.update({downloadURL:url});
+
+  status.textContent="Submitted! Waiting for admin approval.";
+  notify("App submitted successfully for review.");
+  document.getElementById("appName").value="";
+  document.getElementById("shortDesc").value="";
+  document.getElementById("description").value="";
+  document.getElementById("apkFile").value="";
+  loadMyApps();
+ }catch(e){
+  status.textContent="Error: "+e.message;
+  notify("Upload failed: "+e.message);
+  if(docRef){
+   try{await docRef.delete();}catch(cleanupError){console.warn(cleanupError);}
+  }
+ }finally{
+  btn.disabled=false;
+ }
+}
+
+// =====================================
+// 7. DEVELOPER APP HISTORY
+// =====================================
+
+async function loadMyApps(){
+ const box=document.getElementById("myApps");
+ if(!currentUser){box.textContent="Login to view your apps.";return;}
+ try{
+  const snap=await db.collection("apps")
+   .where("developerUID","==",currentUser.uid).get();
+  if(snap.empty){box.textContent="You have not published any apps yet.";return;}
+  box.innerHTML=snap.docs.map(d=>{
+   const a=d.data();
+   return `<div class="card" style="margin:10px 0">
+    <b>${esc(a.name)}</b>
+    <p class="status">Status: ${esc(a.status)}</p>
+    <span class="muted">Version ${esc(a.version)}</span>
+   </div>`;
+  }).join("");
+ }catch(e){box.textContent=e.message;}
+}
+
+// =====================================
+// 8. ADMIN APPROVAL SYSTEM
+// =====================================
+
+async function loadAdmin(){
+ const status=document.getElementById("adminStatus");
+ const box=document.getElementById("pendingApps");
+ if(!currentUser){status.textContent="Please login as admin.";box.innerHTML="";return;}
+ try{
+  const token=await currentUser.getIdTokenResult(true);
+  if(token.claims.admin!==true){
+   status.textContent="Access denied. Admin permission required.";
+   box.innerHTML="";
+   return;
+  }
+  isAdmin=true;
+  status.textContent="Admin access verified.";
+  const snap=await db.collection("apps").where("status","==","pending").get();
+  if(snap.empty){box.innerHTML="<p>No pending apps.</p>";return;}
+  box.innerHTML=snap.docs.map(d=>{
+   const a=d.data();
+   return `<div class="card" style="margin:12px 0">
+    <h3>${esc(a.name)}</h3>
+    <p>${esc(a.shortDesc)}</p>
+    <p class="muted">Developer: ${esc(a.developerEmail)}</p>
+    <p class="muted">Version: ${esc(a.version)} • ${esc(a.category)}</p>
+    <button onclick="reviewApp('${d.id}','approved')">Approve</button>
+    <button class="danger" onclick="reviewApp('${d.id}','rejected')">Reject</button>
+   </div>`;
+  }).join("");
+ }catch(e){status.textContent=e.message;}
+}
+
+async function reviewApp(id,newStatus){
+ if(!currentUser||!isAdmin)return notify("Admin access required.");
+ if(!confirm("Are you sure you want to "+newStatus+" this app?"))return;
+ try{
+  await db.collection("apps").doc(id).update({
+   status:newStatus,
+   reviewedAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  notify("App "+newStatus+".");
+  loadAdmin();
+ }catch(e){notify(e.message);}
+}
+
+// =====================================
+// 9. SECURITY AND HELPER FUNCTIONS
+// =====================================
+
+function esc(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function validURL(value){
+ try{return new URL(value).protocol==="https:";}
+ catch(e){return false;}
+}
+
+function safeURL(value){
+ return validURL(value)?esc(value):"https://placehold.co/100x100/26344e/ffffff?text=APP";
+}
+
+showPage("home");
+</script>
+</body>
+</html>

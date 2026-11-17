@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shiva App Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f3f8;--surface:#fff;--ink:#16162e;--mute:#65678a;--line:#dcdeea;--accent:#f2a900;--accent-ink:#2a1d00;--brand:#3d3df5;--on-brand:#fff;--danger:#c4283c;--ok:#16794c;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1020;--surface:#181a33;--ink:#eceefb;--mute:#9a9dc4;--line:#2a2d52;--accent:#f5b81f;--brand:#8b8bff;--on-brand:#10102a;--danger:#ff7a8c;--ok:#55d494;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:5}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em;color:var(--ink);text-decoration:none;margin-right:auto;background:none;border:0;cursor:pointer;font-family:inherit;padding:0}
+.link{background:none;border:0;color:var(--mute);font:inherit;font-weight:600;cursor:pointer;padding:6px 8px}
+.link:hover{color:var(--ink)}
+.acct{display:flex;align-items:center;gap:10px}
+.coin{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:var(--accent-ink);font-weight:800;padding:4px 12px 4px 6px;border-radius:99px}
+.coin i{width:18px;height:18px;border-radius:50%;border:3px solid var(--accent-ink);display:block}
+main{max-width:860px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:clamp(32px,7vw,52px);line-height:1.03;letter-spacing:-.035em;font-weight:800;margin:0 0 10px}
+h2{font-size:26px;letter-spacing:-.02em;margin:0 0 6px}
+.lead{color:var(--mute);margin:0 0 22px;max-width:56ch}
+.btn{display:inline-block;background:var(--brand);color:var(--on-brand);border:0;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.55;cursor:wait}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
+textarea{min-height:90px;resize:vertical}
+label{display:block;font-weight:600;margin:14px 0 6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;max-width:480px}
+.tabs{display:flex;gap:4px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font:inherit;font-weight:600;color:var(--mute);cursor:pointer}
+.tabs .on{color:var(--ink);border-color:var(--accent)}
+.plus{display:inline-grid;place-items:center;width:38px;height:38px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:24px;line-height:1}
+.plus:hover{border-color:var(--brand);color:var(--brand)}
+.note{margin:12px 0 0;font-weight:600}
+.note.ok{color:var(--ok)}.note.bad{color:var(--danger)}
+.hint{color:var(--mute);font-size:14px;margin:8px 0 0}
+.row{display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.tile{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:26px;color:#fff;background:hsl(var(--h) 55% 42%)}
+.row h3{margin:0;font-size:19px;letter-spacing:-.01em}
+.row p{margin:2px 0 6px;color:var(--mute);overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--mute)}
+.empty{color:var(--mute);padding:28px 0}
+.search{margin:0 0 6px;max-width:420px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:9}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;overflow:auto;max-height:340px;font-size:12.5px;line-height:1.5}
+ol li{margin:6px 0}
+footer{text-align:center;padding:0 0 30px}
+@media(max-width:560px){.row{grid-template-columns:48px 1fr}.tile{width:48px;height:48px}.row .btn{grid-column:1/-1;text-align:center}}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="brand" data-go="store">Shiva App Store</button>
+  <nav><button class="link" data-go="store">Browse</button><button class="link" data-go="publish">Publish</button></nav>
+  <div class="acct">
+    <span class="coin" id="coin" hidden><i></i><span id="coins">0</span> coins</span>
+    <button class="plus" id="plusBtn" type="button" aria-label="Create account" title="Create account">+</button>
+    <button class="btn ghost" id="authBtn">Sign in</button>
+  </div>
+</header>
+
+<main>
+  <section class="view" id="v-store">
+    <h1>Shiva App Store</h1>
+    <p class="lead">Browse and download apps shared by the community. Sign in to publish your own.</p>
+    <input class="search" id="q" type="search" placeholder="Search apps by name" aria-label="Search apps">
+    <div id="list"><p class="empty">Loading apps…</p></div>
+  </section>
+
+  <section class="view" id="v-auth" hidden>
+    <h2>Your account</h2>
+    <div class="panel">
+      <div class="tabs"><button id="tabIn" class="on" type="button">Sign in</button><button id="tabUp" type="button">Create account</button></div>
+      <form id="authForm">
+        <label for="email">Email</label>
+        <input id="email" type="email" required autocomplete="email">
+        <label for="pw">Password</label>
+        <input id="pw" type="password" minlength="6" required autocomplete="current-password">
+        <p class="hint" id="authHint" hidden>New accounts get 100 coins and open the store right away. Publishing an app costs 10 coins.</p>
+        <p style="margin:16px 0 0"><button class="btn" id="authGo" type="submit">Sign in</button></p>
+        <p class="note" id="authmsg" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="view" id="v-publish" hidden>
+    <h2>Publish an app</h2>
+    <p class="lead">Publishing costs 10 coins. Your balance: <b id="bal">0</b> coins.</p>
+    <div class="panel">
+      <form id="pubForm">
+        <label for="name">App name</label>
+        <input id="name" required maxlength="60">
+        <label for="desc">Description</label>
+        <textarea id="desc" maxlength="500"></textarea>
+        <label for="file">App file (up to 50 MB)</label>
+        <input id="file" type="file" required>
+        <p style="margin:16px 0 0"><button class="btn" id="pubGo" type="submit">Publish for 10 coins</button></p>
+        <p class="note" id="pubmsg" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="view" id="v-setup" hidden>
+    <h2>Database setup</h2>
+    <p class="lead">Connect this page to your Supabase project once. After that the store works for everyone.</p>
+    <ol>
+      <li>Create a free project at supabase.com.</li>
+      <li>Open SQL Editor, paste the script below, and run it.</li>
+      <li>Open Project Settings, then API. Copy the Project URL and the anon public key into <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> at the top of the script in this file.</li>
+      <li>Recommended: in Authentication, Sign In / Providers, Email, turn off Confirm email so a new account opens the store right away.</li>
+    </ol>
+    <p><button class="btn" id="copySql" type="button">Copy SQL</button></p>
+<pre id="sql">-- Shiva App Store: tables, coin rules, storage
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  display_name text,
+  coins int not null default 0 check (coins >= 0),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.apps (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null references public.profiles(id) on delete cascade,
+  publisher text,
+  name text not null,
+  description text,
+  file_path text not null,
+  file_name text not null,
+  file_size bigint not null default 0,
+  downloads int not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles enable row level security;
+alter table public.apps enable row level security;
+drop policy if exists "read own profile" on public.profiles;
+create policy "read own profile" on public.profiles for select using (auth.uid() = id);
+drop policy if exists "public can browse apps" on public.apps;
+create policy "public can browse apps" on public.apps for select using (true);
+
+-- 100-coin welcome bonus on first signup
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, display_name, coins)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'user_name', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)), 100)
+  on conflict (id) do nothing;
+  return new;
+end $$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- publishing deducts 10 coins (atomic, server-side)
+create or replace function public.publish_app(p_name text, p_description text, p_file_path text, p_file_name text, p_file_size bigint)
+returns public.apps language plpgsql security definer set search_path = public as $$
+declare r public.apps; who text;
+begin
+  update public.profiles set coins = coins - 10
+    where id = auth.uid() and coins >= 10 returning coalesce(display_name, split_part(email, '@', 1)) into who;
+  if not found then raise exception 'Not enough coins. Publishing costs 10 coins.'; end if;
+  insert into public.apps (owner, publisher, name, description, file_path, file_name, file_size)
+    values (auth.uid(), who, p_name, p_description, p_file_path, p_file_name, p_file_size) returning * into r;
+  return r;
+end $$;
+revoke execute on function public.publish_app from public, anon;
+grant execute on function public.publish_app to authenticated;
+
+create or replace function public.increment_download(p_id uuid) returns void
+language sql security definer set search_path = public as $$
+  update public.apps set downloads = downloads + 1 where id = p_id;
+$$;
+
+-- file storage (public bucket, users write only to their own folder)
+insert into storage.buckets (id, name, public, file_size_limit)
+  values ('apps', 'apps', true, 52428800) on conflict (id) do nothing;
+drop policy if exists "upload to own folder" on storage.objects;
+create policy "upload to own folder" on storage.objects for insert to authenticated
+  with check (bucket_id = 'apps' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "remove own files" on storage.objects;
+create policy "remove own files" on storage.objects for delete to authenticated
+  using (bucket_id = 'apps' and (storage.foldername(name))[1] = auth.uid()::text);</pre>
+  </section>
+</main>
+
+<footer><button class="link" data-go="setup">Database setup</button></footer>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// 1) Paste your Supabase project values here (Project Settings > API)
+const SUPABASE_URL = "https://qfoufbdgwvadcdszdttl.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_5ptGD-xXuf5yMNN6Qr2VjQ_Vv5EuL_F";
+
+const BUCKET = "apps", COST = 10, MAX_MB = 50;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+let sb = null, user = null, coins = 0, mode = "in";
+
+function go(v) {
+  if (!sb) v = "setup";
+  else if (v === "publish" && !user) { authMode("in"); note("#authmsg", "Sign in to publish an app."); v = "auth"; }
+  $$(".view").forEach(x => x.hidden = x.id !== "v-" + v);
+  if (v === "publish") $("#bal").textContent = coins;
+  window.scrollTo(0, 0);
+}
+function note(sel, t, bad) { const n = $(sel); n.textContent = t; n.className = "note " + (bad ? "bad" : "ok"); n.hidden = !t; }
+function toast(t) { const n = $("#toast"); n.textContent = t; n.hidden = false; setTimeout(() => n.hidden = true, 3200); }
+function authMode(m) {
+  mode = m;
+  $("#tabIn").classList.toggle("on", m === "in"); $("#tabUp").classList.toggle("on", m === "up");
+  $("#authGo").textContent = m === "in" ? "Sign in" : "Create account";
+  $("#authHint").hidden = m !== "up";
+  $("#pw").autocomplete = m === "in" ? "current-password" : "new-password";
+  note("#authmsg", "");
+}
+
+async function refreshAuth() {
+  coins = 0;
+  if (user) {
+    const { data } = await sb.from("profiles").select("coins").eq("id", user.id).maybeSingle();
+    coins = data?.coins ?? 0;
+  }
+  $("#coin").hidden = !user; $("#coins").textContent = coins;
+  $("#authBtn").textContent = user ? "Sign out" : "Sign in";
+  $("#plusBtn").hidden = !!user;
+  $("#bal").textContent = coins;
+}
+
+async function loadApps() {
+  const q = $("#q").value.trim().replace(/[%,()]/g, " "), box = $("#list");
+  let r = sb.from("apps").select("*").order("created_at", { ascending: false }).limit(100);
+  if (q) r = r.ilike("name", "%" + q + "%");
+  const { data, error } = await r;
+  if (error) { box.innerHTML = `<p class="empty">Could not load apps: ${esc(error.message)}</p>`; return; }
+  if (!data.length) { box.innerHTML = `<p class="empty">${q ? "No apps match that search." : "No apps yet. Sign in and publish the first one."}</p>`; return; }
+  box.innerHTML = data.map(a => {
+    const url = sb.storage.from(BUCKET).getPublicUrl(a.file_path, { download: a.file_name }).data.publicUrl;
+    const h = [...a.name].reduce((s, c) => s + c.charCodeAt(0), 0) * 37 % 360;
+    return `<article class="row"><div class="tile" style="--h:${h}">${esc(a.name[0].toUpperCase())}</div>
+      <div><h3>${esc(a.name)}</h3><p>${esc(a.description || "No description.")}</p>
+      <div class="meta"><span>by ${esc(a.publisher || "unknown")}</span><span>${fmt(a.file_size)}</span><span><b data-dl="${a.id}">${a.downloads}</b> downloads</span><span>${new Date(a.created_at).toLocaleDateString()}</span></div></div>
+      <a class="btn" href="${esc(url)}" download="${esc(a.file_name)}" data-id="${a.id}">Download</a></article>`;
+  }).join("");
+}
+
+async function init() {
+  if (SUPABASE_URL.startsWith("PASTE") || !window.supabase) { go("setup"); return; }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data } = await sb.auth.getSession();
+  user = data.session?.user || null;
+  sb.auth.onAuthStateChange((_e, s) => { user = s?.user || null; setTimeout(refreshAuth, 0); });
+  await refreshAuth(); go("store"); loadApps();
+}
+
+document.addEventListener("click", e => { const g = e.target.closest("[data-go]"); if (g) go(g.dataset.go); });
+$("#tabIn").onclick = () => authMode("in");
+$("#tabUp").onclick = () => authMode("up");
+$("#plusBtn").onclick = () => { authMode("up"); go("auth"); };
+$("#copySql").onclick = () => navigator.clipboard.writeText($("#sql").textContent).then(() => toast("SQL copied."));
+let t; $("#q").oninput = () => { clearTimeout(t); t = setTimeout(() => sb && loadApps(), 250); };
+
+$("#authBtn").onclick = async () => {
+  if (!sb) return go("setup");
+  if (!user) { authMode("in"); return go("auth"); }
+  await sb.auth.signOut(); user = null; await refreshAuth(); go("store"); toast("Signed out.");
+};
+
+$("#authForm").onsubmit = async e => {
+  e.preventDefault();
+  const email = $("#email").value.trim(), password = $("#pw").value, up = mode === "up";
+  $("#authGo").disabled = true;
+  const r = up ? await sb.auth.signUp({ email, password }) : await sb.auth.signInWithPassword({ email, password });
+  $("#authGo").disabled = false;
+  if (r.error) return note("#authmsg", r.error.message, true);
+  if (!r.data.session) return note("#authmsg", "Account created. Confirm the email we sent you, then sign in. To open the store right away, turn off Confirm email in Supabase (see Database setup).");
+  user = r.data.session.user; $("#authForm").reset(); await refreshAuth(); go("store");
+  toast(up ? "Welcome! 100 coins added to your account." : "Signed in.");
+};
+
+$("#pubForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = $("#file").files[0], name = $("#name").value.trim(), desc = $("#desc").value.trim();
+  if (!f) return note("#pubmsg", "Choose a file to upload.", true);
+  if (f.size > MAX_MB * 1048576) return note("#pubmsg", "That file is over " + MAX_MB + " MB.", true);
+  if (coins < COST) return note("#pubmsg", "You need " + COST + " coins to publish. Your balance is " + coins + ".", true);
+  $("#pubGo").disabled = true; note("#pubmsg", "Uploading…");
+  const path = user.id + "/" + Date.now() + "-" + f.name.replace(/[^\w.\-]+/g, "_");
+  const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || "application/octet-stream" });
+  if (up.error) { $("#pubGo").disabled = false; return note("#pubmsg", "Upload failed: " + up.error.message, true); }
+  const { error } = await sb.rpc("publish_app", { p_name: name, p_description: desc, p_file_path: path, p_file_name: f.name, p_file_size: f.size });
+  $("#pubGo").disabled = false;
+  if (error) { await sb.storage.from(BUCKET).remove([path]); return note("#pubmsg", error.message, true); }
+  $("#pubForm").reset(); note("#pubmsg", ""); await refreshAuth(); await loadApps(); go("store");
+  toast("Published. 10 coins deducted.");
+};
+
+$("#list").addEventListener("click", e => {
+  const a = e.target.closest("a[data-id]"); if (!a) return;
+  sb.rpc("increment_download", { p_id: a.dataset.id });
+  const b = document.querySelector(`[data-dl="${a.dataset.id}"]`); if (b) b.textContent = +b.textContent + 1;
+});
+
+init();
+</script>
+</body>
+</html>
